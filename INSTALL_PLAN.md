@@ -30,56 +30,89 @@
 
 ## 二、前置条件检查
 
-| # | 条件 | 检查命令 | 必须 |
-|---|------|----------|------|
-| 1 | Bun >= 1.0 | `bun --version` | 是 |
-| 2 | OpenCode 可用 | `which opencode` 或在 PATH 中 | 是 |
-| 3 | 至少一个模型 API Key | 检查环境变量或配置 | 是 |
-| 4 | Node.js >= 18（Bun 一般自带） | `node --version` | 否 |
-| 5 | 磁盘空间 > 500MB | `df -h` | 否 |
+| # | 条件 | 检查命令 | 必须 | 失败处理 |
+|---|------|----------|------|----------|
+| 1 | OpenCode 已安装 | `which opencode` 或在 PATH 中 | **是** | **阻塞** — 停止安装，提示用户先安装 OpenCode（https://opencode.ai/） |
+| 2 | Bun >= 1.0 | `bun --version` | **是** | **阻塞** — `curl -fsSL https://bun.sh/install \| bash` 后重试 |
+| 3 | 代理连通性 | `curl -x http://127.0.0.1:7897 -sI https://registry.npmjs.org/ \| head -1` | **是** | **阻塞** — 本机外网必须走代理，否则 bun/npm install 超时 |
+| 4 | 至少一个模型 API Key / 聚合器 endpoint | 检查环境变量或 OpenCode 配置 | **是** | **阻塞** — 提示用户配置 API key 或聚合器地址 |
+| 5 | Node.js >= 18（Bun 一般自带） | `node --version` | 否 | OK，Bun 自带 runtime |
+| 6 | 磁盘空间 > 500MB | `df -h` | 否 | 提醒清理 |
 
-### 2.1 已知信息
+### 2.1 已知环境信息
 - 平台：macOS（darwin）
+- 外网代理：`127.0.0.1:7897`（**所有包管理器必须走此代理**）
+- 模型 provider：通过聚合器（yunwu.ai、4sapi.com）接入，不直连大厂 API
 - 已有 GitHub token 配置完成（xymu2026-boop）
 - 当前工作目录：`/Users/limuxy`
+- OpenCode 配置目录：待探测（通常 `~/.config/opencode/` 或 `~/.opencode/`）
 
 ---
 
 ## 三、安装步骤
 
-### Step 1: 安装 oh-my-openagent 插件
+### Step 0: 预检（Pre-flight Check）
+
+执行前必须确认以下 3 项全部通过，否则停止流程：
 
 ```bash
+# 0.1 检查 OpenCode 是否安装
+which opencode || echo "BLOCKED: OpenCode not found"
+# 若 BLOCKED → 停止，提示先安装 OpenCode
+
+# 0.2 设置代理并验证连通性
+export HTTP_PROXY=http://127.0.0.1:7897
+export HTTPS_PROXY=http://127.0.0.1:7897
+export ALL_PROXY=http://127.0.0.1:7897
+curl -x http://127.0.0.1:7897 -sI https://registry.npmjs.org/ | head -1
+# 预期: HTTP/2 200
+# 若失败 → 停止，检查代理是否正常运行
+
+# 0.3 探测 OpenCode 配置目录
+OPENCODE_DIR=$(opencode config path 2>/dev/null || echo "$HOME/.config/opencode")
+echo "OpenCode config dir: $OPENCODE_DIR"
+```
+
+**门控规则**：0.1 和 0.2 任一失败 → **立即停止，不继续**。
+
+---
+
+### Step 1: 安装 oh-my-openagent 插件
+
+> 以下命令均需在代理环境中执行
+
+```bash
+# 确保代理已设置（从 Step 0 延续）
+export HTTP_PROXY=http://127.0.0.1:7897
+export HTTPS_PROXY=http://127.0.0.1:7897
+
 # 方式一：通过 OpenCode 插件机制安装
 opencode plugin install oh-my-openagent
 
 # 方式二：如果上条不可用，用 bunx 初始化
-bunx oh-my-openagent@latest init
+bunx oh-my-openagent@latest init --directory "$OPENCODE_DIR"
 ```
 
-**预期结果**：在当前目录或 OpenCode 配置目录下生成 `oh-my-openagent.json` 配置文件。
+**预期结果**：在 **OpenCode 配置目录**（`~/.config/opencode/` 或探测到的路径）下生成 `oh-my-openagent.json` 配置文件。**不在当前 repo 目录生成**。
 
-**失败处理**：若安装失败，检查 bun 版本和网络连接；记录错误日志。
+**失败处理**：若安装超时或网络错误，确认代理环境变量已设置后重试；记录错误日志。
 
 ---
 
 ### Step 2: 生成基础配置文件
 
-确认配置文件位置（按优先级）：
-1. 项目目录下的 `oh-my-openagent.json`
-2. OpenCode 全局配置目录下的 `oh-my-openagent.json`
+配置文件路径（**必须在 OpenCode 配置目录**）：
+```
+$OPENCODE_DIR/oh-my-openagent.json
+```
 
-如未自动生成，手动创建最小配置：
+如未自动生成，手动创建最小配置（**注意：provider 使用通用占位，由 doctor 或用户自行补充聚合器 endpoint**）：
 
 ```json
 {
   "background_task": {
     "defaultConcurrency": 3,
-    "providerConcurrency": {
-      "openai": 2,
-      "google": 3,
-      "anthropic": 2
-    }
+    "providerConcurrency": {}
   },
   "sisyphus_agent": {
     "disabled": false,
@@ -93,11 +126,14 @@ bunx oh-my-openagent@latest init
 }
 ```
 
+> **说明**：该环境通过聚合器（yunwu.ai、4sapi.com）使用模型，不直连大厂 API。`providerConcurrency` 留空让 doctor 自动检测可用 provider，避免写死 OpenAIs/Google/Anthropic。
+
 **配置原则**（来自官方文档）：
 - 先用默认配置跑通，不做过度调优
 - team_mode 默认关闭
 - planner_enabled 开启（保证 @plan 可用）
 - 只启用最基础的内置 skills
+- provider 让系统自动检测，不预先写死
 
 ---
 
@@ -153,11 +189,13 @@ bunx oh-my-openagent doctor
 
 | 风险 | 概率 | 影响 | 缓解措施 |
 |------|------|------|----------|
-| bun 未安装 | 低 | 阻塞 | 先检查，必要时 `curl -fsSL https://bun.sh/install | bash` |
-| 模型 API Key 未配置 | 中 | 阻塞 | 先检查环境变量；提示用户补充 |
+| OpenCode 未安装 | 中 | 阻塞 | Step 0 检查，失败则停止并提示安装 |
+| 代理未连通 | 高 | 阻塞 | Step 0 验证代理，所有命令前置 `export HTTP_PROXY/HTTPS_PROXY` |
+| bun 未安装 | 低 | 阻塞 | 先检查，必要时 `curl -fsSL https://bun.sh/install \| bash` |
+| 模型 API Key / 聚合器未配置 | 中 | 阻塞 | 先检查环境变量；提示用户补充 |
 | 安装过程修改全局配置 | 低 | 中 | 先备份已有配置 |
 | 代理名冲突 | 低 | 低 | 检查 opensource agent 列表 |
-| doctor 报网络错误 | 低 | 中 | 检查代理设置、重试 |
+| doctor 报网络错误 | 低 | 中 | 确认代理已设置、重试 |
 
 ---
 
@@ -169,11 +207,11 @@ bunx oh-my-openagent doctor
 # 移除插件
 opencode plugin remove oh-my-openagent
 
-# 或删除配置文件
-rm oh-my-openagent.json
+# 或删除配置文件（注意路径在 OpenCode 配置目录）
+rm "$OPENCODE_DIR/oh-my-openagent.json"
 
 # 恢复备份
-cp oh-my-openagent.json.bak oh-my-openagent.json
+cp "$OPENCODE_DIR/oh-my-openagent.json.bak" "$OPENCODE_DIR/oh-my-openagent.json"
 ```
 
 回滚后确认：`opencode` 恢复正常使用，无残留错误。
@@ -206,4 +244,15 @@ cp oh-my-openagent.json.bak oh-my-openagent.json
 
 ---
 
-*方案版本：v1.0 | 创建时间：2026-05-31 | 状态：待审批*
+*方案版本：v1.1 | 创建时间：2026-05-31 | 状态：待复审 | 修订：响应 Hermes Plan Gate 审查*
+
+---
+
+## 附录：修订记录（v1.0 → v1.1）
+
+| # | Hermes 意见 | 严重度 | 修复内容 | 位置 |
+|---|------------|--------|----------|------|
+| 1 | 未检查 OpenCode 是否存在，失败无处理 | 🔴 阻塞 | 新增 **Step 0 预检**：检查 OpenCode、代理、配置目录；任一步失败→停止。前置条件表增加"失败处理"列 | §2, §3 Step 0 |
+| 2 | 忽略代理环境 `127.0.0.1:7897` | 🔴 阻塞 | 前置条件增加代理连通性验证；Step 0 设置 `HTTP_PROXY/HTTPS_PROXY`；Step 1 所有命令前置代理环境变量；风险评估增加"代理未连通" | §2, §3 Step0/1, §5 |
+| 3 | Provider 写死 OpenAI/Google/Anthropic | 🟡 重要 | `providerConcurrency` 改为空对象，让 doctor 自动检测；JSON 配置加注释说明聚合器环境 | §3 Step 2 |
+| 4 | 配置文件路径模糊 | 🟡 重要 | 明确路径为 `$OPENCODE_DIR/oh-my-openagent.json`；Step 0 探测 OpenCode 配置目录；回滚方案同步修正 | §3 Step 0/2, §6 |
