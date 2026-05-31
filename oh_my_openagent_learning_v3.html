@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>oh-my-openagent 学习地图：原理、代理分工与实战用法</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --panel: #ffffff;
+      --panel-2: #f9fbff;
+      --text: #172033;
+      --muted: #647084;
+      --line: #dfe6f1;
+      --strong: #0f172a;
+      --accent: #315efb;
+      --accent-2: #6e47ff;
+      --good: #0f7a52;
+      --warn: #a15c00;
+      --bad: #b42318;
+      --code-bg: #0d1321;
+      --code: #eaf0ff;
+      --radius: 18px;
+      --shadow: 0 18px 48px rgba(31, 41, 55, .09);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: radial-gradient(circle at top left, #eaf0ff 0, rgba(234,240,255,0) 32%), var(--bg);
+      color: var(--text);
+      line-height: 1.72;
+    }
+
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    .page {
+      display: grid;
+      grid-template-columns: 280px minmax(0, 1fr);
+      gap: 28px;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 28px;
+    }
+
+    aside {
+      position: sticky;
+      top: 24px;
+      align-self: start;
+      height: calc(100vh - 48px);
+      overflow: auto;
+      background: rgba(255,255,255,.86);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      backdrop-filter: blur(16px);
+    }
+
+    .brand {
+      padding: 12px 12px 16px;
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 14px;
+    }
+
+    .brand-title {
+      font-weight: 780;
+      color: var(--strong);
+      font-size: 18px;
+      line-height: 1.28;
+      letter-spacing: -.02em;
+    }
+
+    .brand-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 8px;
+    }
+
+    .nav a {
+      display: block;
+      padding: 9px 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #334155;
+      margin-bottom: 3px;
+    }
+
+    .nav a:hover { background: #eef3ff; text-decoration: none; }
+
+    main { min-width: 0; }
+
+    .hero {
+      background: linear-gradient(135deg, #111827 0%, #263c87 52%, #4c1d95 100%);
+      color: #fff;
+      border-radius: 28px;
+      padding: 42px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .hero:after {
+      content: "";
+      position: absolute;
+      right: -120px;
+      top: -120px;
+      width: 360px;
+      height: 360px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.12);
+    }
+
+    .kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border: 1px solid rgba(255,255,255,.22);
+      border-radius: 999px;
+      color: rgba(255,255,255,.8);
+      font-size: 13px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero h1 {
+      margin: 20px 0 14px;
+      max-width: 860px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.04;
+      letter-spacing: -.055em;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero p {
+      max-width: 860px;
+      color: rgba(255,255,255,.78);
+      font-size: 18px;
+      margin: 0;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 28px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .hero-metric {
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      border-radius: 18px;
+      padding: 14px;
+    }
+
+    .hero-metric strong {
+      display: block;
+      font-size: 22px;
+      line-height: 1.2;
+      margin-bottom: 4px;
+    }
+
+    .hero-metric span {
+      color: rgba(255,255,255,.68);
+      font-size: 12px;
+    }
+
+    section {
+      background: rgba(255,255,255,.88);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 30px;
+      margin-top: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    h2 {
+      margin: 0 0 18px;
+      font-size: 28px;
+      line-height: 1.2;
+      letter-spacing: -.035em;
+      color: var(--strong);
+    }
+
+    h3 {
+      margin: 28px 0 10px;
+      font-size: 20px;
+      line-height: 1.3;
+      color: var(--strong);
+      letter-spacing: -.02em;
+    }
+
+    h4 {
+      margin: 18px 0 8px;
+      color: var(--strong);
+    }
+
+    .lead {
+      color: var(--muted);
+      font-size: 16px;
+      margin: -4px 0 20px;
+    }
+
+    .callout {
+      border: 1px solid #c9d7ff;
+      background: linear-gradient(180deg, #f5f8ff, #ffffff);
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin: 18px 0;
+    }
+
+    .callout strong { color: #1638a8; }
+
+    .truth {
+      border: 1px solid #ffd7a3;
+      background: #fff8ed;
+      border-radius: 20px;
+      padding: 18px 20px;
+      margin: 18px 0;
+      color: #553600;
+    }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 14px;
+      margin-top: 16px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+    }
+
+    .card h3, .card h4 { margin-top: 0; }
+    .card p { margin: 8px 0 0; color: var(--muted); font-size: 14px; }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #eef3ff;
+      color: #2442c3;
+      font-size: 12px;
+      font-weight: 650;
+      margin-bottom: 10px;
+    }
+
+    .tag.good { background: #e9f8f1; color: var(--good); }
+    .tag.warn { background: #fff2d9; color: var(--warn); }
+    .tag.bad { background: #ffe9e7; color: var(--bad); }
+
+    .pipeline {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 10px;
+      margin: 20px 0;
+    }
+
+    .step {
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 18px;
+      padding: 14px;
+      min-height: 120px;
+    }
+
+    .step b {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 10px;
+      background: #eef3ff;
+      color: var(--accent);
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+
+    .step strong { display: block; color: var(--strong); line-height: 1.3; }
+    .step span { display: block; color: var(--muted); font-size: 12px; margin-top: 8px; line-height: 1.5; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 16px 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      display: table;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: top;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: #f4f7fc;
+      color: #26334f;
+      font-weight: 760;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      background: #eef2f7;
+      color: #111827;
+      border-radius: 6px;
+      padding: 2px 5px;
+      font-size: .92em;
+    }
+
+    pre {
+      margin: 14px 0;
+      background: var(--code-bg);
+      color: var(--code);
+      border-radius: 18px;
+      padding: 18px;
+      overflow-x: auto;
+      line-height: 1.55;
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    pre code {
+      background: transparent;
+      color: inherit;
+      padding: 0;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 16px 0 18px;
+    }
+
+    .tab-btn {
+      border: 1px solid var(--line);
+      background: #fff;
+      color: #334155;
+      border-radius: 999px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: 650;
+    }
+    .tab-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .agent-matrix {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .agent-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 18px;
+      min-height: 210px;
+    }
+
+    .agent-card .name {
+      font-size: 19px;
+      font-weight: 780;
+      color: var(--strong);
+      margin-bottom: 6px;
+    }
+    .agent-card .role {
+      color: var(--accent);
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    .agent-card p { margin: 8px 0; font-size: 14px; color: var(--muted); }
+
+    .checklist {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .check-item {
+      display: grid;
+      grid-template-columns: 28px 1fr;
+      gap: 10px;
+      align-items: start;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+
+    .box {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #b7c3d6;
+      border-radius: 6px;
+      margin-top: 3px;
+    }
+
+    .small { font-size: 13px; color: var(--muted); }
+
+    .source-list {
+      display: grid;
+      gap: 10px;
+      padding-left: 0;
+      list-style: none;
+    }
+
+    .source-list li {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+
+    .footer {
+      margin: 24px 0 12px;
+      color: var(--muted);
+      text-align: center;
+      font-size: 13px;
+    }
+
+    @media (max-width: 1100px) {
+      .page { grid-template-columns: 1fr; }
+      aside { position: relative; height: auto; top: 0; }
+      .hero-grid, .grid-4, .pipeline { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .agent-matrix, .grid-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 720px) {
+      .page { padding: 14px; }
+      .hero { padding: 28px 22px; border-radius: 22px; }
+      section { padding: 22px 18px; border-radius: 20px; }
+      .hero-grid, .grid-2, .grid-3, .grid-4, .pipeline, .agent-matrix { grid-template-columns: 1fr; }
+      th, td { font-size: 13px; padding: 11px; }
+      .nav { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside>
+      <div class="brand">
+        <div class="brand-title">oh-my-openagent 学习地图</div>
+        <div class="brand-sub">原理 · 代理分工 · 配置 · 实战流程 · 验证清单</div>
+      </div>
+      <nav class="nav">
+        <a href="#core">核心判断</a>
+        <a href="#mental-model">系统模型</a>
+        <a href="#architecture">运行链路</a>
+        <a href="#agents">代理分工</a>
+        <a href="#plan-gate">Plan 系列代理</a>
+        <a href="#config">配置文件</a>
+        <a href="#modes">使用模式</a>
+        <a href="#commands">命令体系</a>
+        <a href="#categories-skills">Category 与 Skill</a>
+        <a href="#workflow">推荐工作流</a>
+        <a href="#prompts">提示词模板</a>
+        <a href="#pitfalls">常见误区</a>
+        <a href="#evaluation">验证清单</a>
+        <a href="#sources">资料来源</a>
+      </nav>
+    </aside>
+
+    <main>
+      <header class="hero">
+        <div class="kicker">面向 OpenCode 的多代理研发编排插件</div>
+        <h1>不要把 oh-my-openagent 理解成“更多 Agent”。它真正解决的是研发任务的计划、分工、执行与验证闭环。</h1>
+        <p>这个页面帮助你系统理解 <code>oh-my-openagent.json</code> 的作用、各代理的岗位边界、不同使用模式的取舍，以及如何把它放进 Git Issue 驱动的自驾代码库流程里。</p>
+        <div class="hero-grid">
+          <div class="hero-metric"><strong>1</strong><span>核心入口：OpenCode 插件机制</span></div>
+          <div class="hero-metric"><strong>4</strong><span>Plan 链路：Prometheus / Metis / Momus / Atlas</span></div>
+          <div class="hero-metric"><strong>3</strong><span>三层架构：计划层 / 执行层 / 工人层</span></div>
+          <div class="hero-metric"><strong>2</strong><span>关键抽象：Category 决定任务类型，Skill 注入专业能力</span></div>
+        </div>
+      </header>
+
+      <section id="core">
+        <h2>一、核心判断</h2>
+        <p class="lead">先把概念钉死。不然你会被一堆代理名字绕进去。</p>
+        <div class="callout">
+          <strong>oh-my-openagent 不是一个独立 IDE，也不是单纯的提示词包。</strong><br />
+          它是运行在 OpenCode 上的多模型、多代理编排 harness。OpenCode 提供终端/IDE/桌面里的代码执行环境、LSP、多会话等基础能力；oh-my-openagent 借助插件机制扩展出代理、任务路由、后台任务、技能、MCP、命令和 hooks。
+        </div>
+        <table>
+          <tr><th>对象</th><th>真实含义</th><th>你该怎么理解</th></tr>
+          <tr><td>OpenCode</td><td>开源 AI coding agent</td><td>执行环境。它负责让 AI 看代码、改代码、跑命令、接 LSP。</td></tr>
+          <tr><td>oh-my-openagent</td><td>多模型 agent orchestration harness</td><td>编排层。它把一个 coding agent 拆成一个有岗位分工的研发小队。</td></tr>
+          <tr><td>oh-my-openagent.json</td><td>插件配置文件</td><td>规则表。控制模型、代理、category、并发、权限、fallback、skills。</td></tr>
+          <tr><td>Agent</td><td>岗位化角色</td><td>不是越多越好。每个代理必须有清晰边界。</td></tr>
+          <tr><td>Category</td><td>任务类型路由</td><td>代理委派任务时不直接选模型，而是选任务类型。</td></tr>
+          <tr><td>Skill</td><td>专业上下文 + 工具注入</td><td>给代理临时加载某个场景的 SOP、MCP、操作方法。</td></tr>
+        </table>
+        <div class="truth">
+          真实建议：你学习这个插件，重点不要放在“有哪些神话代理”。重点要放在“一个研发任务从需求到代码提交，中间每个节点谁负责、谁不能越权、用什么证据判断完成”。
+        </div>
+      </section>
+
+      <section id="mental-model">
+        <h2>二、先建立系统模型</h2>
+        <p class="lead">它的本质是把单一 Agent 的长任务压力拆掉：计划交给计划者，执行交给执行者，审查交给审查者，搜索交给搜索者。</p>
+        <div class="grid-4">
+          <div class="card"><span class="tag">输入</span><h3>任务请求</h3><p>来自用户、Git Issue、Bug、需求文档、UI 截图、测试失败日志。</p></div>
+          <div class="card"><span class="tag">判断</span><h3>意图与复杂度</h3><p>简单任务直接做；复杂任务走 <code>ulw</code>；精确任务走 <code>@plan → /start-work</code>。</p></div>
+          <div class="card"><span class="tag">路由</span><h3>代理与 Category</h3><p>Sisyphus 或 Atlas 把不同任务派给合适的代理或 category。</p></div>
+          <div class="card"><span class="tag">闭环</span><h3>验证与沉淀</h3><p>运行测试、检查实现、拆分提交、记录失败归因和项目上下文。</p></div>
+        </div>
+        <h3>一句话模型</h3>
+        <pre><code>用户目标
+  → 任务判断
+  → 计划拆解
+  → 计划审查
+  → 分工执行
+  → 测试验证
+  → 原子提交
+  → 经验沉淀</code></pre>
+      </section>
+
+      <section id="architecture">
+        <h2>三、运行链路：三层架构</h2>
+        <p class="lead">官方文档把它描述为通过计划与执行分离，把简单 AI agent 变成协调开发团队。</p>
+        <div class="pipeline">
+          <div class="step"><b>01</b><strong>User</strong><span>提出任务、Issue、Bug、改造目标。</span></div>
+          <div class="step"><b>02</b><strong>Prometheus</strong><span>访谈、澄清、生成计划。</span></div>
+          <div class="step"><b>03</b><strong>Metis / Momus</strong><span>找缺口、审计划、拒绝模糊任务。</span></div>
+          <div class="step"><b>04</b><strong>Atlas</strong><span>读取计划，拆分并调度执行。</span></div>
+          <div class="step"><b>05</b><strong>Workers</strong><span>Junior / Oracle / Explore / Librarian 等执行专项任务。</span></div>
+          <div class="step"><b>06</b><strong>Verification</strong><span>测试、review-work、git-master、归档。</span></div>
+        </div>
+        <table>
+          <tr><th>层级</th><th>核心角色</th><th>解决的问题</th><th>失败时的典型表现</th></tr>
+          <tr><td>计划层</td><td>Prometheus / Metis / Momus</td><td>需求不清、边界不清、验收不清</td><td>Agent 自己脑补业务逻辑，改了一堆不该改的文件。</td></tr>
+          <tr><td>执行层</td><td>Atlas</td><td>任务拆分、并行调度、状态连续性</td><td>多任务互相踩踏，前一个结论没传给后一个执行者。</td></tr>
+          <tr><td>工人层</td><td>Junior / Oracle / Explore / Librarian / Looker</td><td>具体编码、代码库侦察、文档检索、架构咨询、视觉分析</td><td>高级模型被浪费在 grep；低级模型被迫做架构判断。</td></tr>
+        </table>
+      </section>
+
+      <section id="agents">
+        <h2>四、代理分工：不要记名字，记岗位</h2>
+        <p class="lead">代理不是“越多越智能”。代理的价值来自边界：谁负责判断，谁负责执行，谁只读，谁不能乱改。</p>
+        <div class="agent-matrix">
+          <div class="agent-card"><div class="name">Sisyphus</div><div class="role">主协调者 / 默认入口</div><p>负责理解目标、规划方向、调用子代理、推动任务完成。</p><p><strong>适合：</strong>大部分中等复杂任务、需要自动探索代码库的工作。</p><p><strong>不要：</strong>让它无限自由地重构全项目。</p></div>
+          <div class="agent-card"><div class="name">Hephaestus</div><div class="role">深度自主工程师</div><p>适合 GPT-native 的深推理、复杂架构、跨文件 debug。</p><p><strong>适合：</strong>难以定位的 bug、复杂技术方案。</p><p><strong>不要：</strong>拿它做简单 grep 或文案修补。</p></div>
+          <div class="agent-card"><div class="name">Prometheus</div><div class="role">战略计划者</div><p>先问清楚问题，再生成详细计划。复杂任务动代码前应该先经过它。</p><p><strong>适合：</strong>Git Issue 转执行计划、需求澄清、边界定义。</p><p><strong>不要：</strong>让它直接写业务代码。</p></div>
+          <div class="agent-card"><div class="name">Atlas</div><div class="role">执行调度器</div><p>读取 Prometheus 计划，分配给专门的执行者，并持续验证进度。</p><p><strong>适合：</strong><code>/start-work</code> 后的计划执行。</p><p><strong>不要：</strong>让它重新发明计划。</p></div>
+          <div class="agent-card"><div class="name">Sisyphus-Junior</div><div class="role">具体任务执行者</div><p>category 任务的实际执行者，不能继续无限转派，避免委派循环。</p><p><strong>适合：</strong>单个明确子任务、局部改动。</p><p><strong>不要：</strong>让它做架构裁决。</p></div>
+          <div class="agent-card"><div class="name">Oracle</div><div class="role">只读架构顾问</div><p>只读咨询，适合架构风险、安全风险、多系统取舍。</p><p><strong>适合：</strong>计划评审、方案取舍、复杂问题诊断。</p><p><strong>不要：</strong>让它改文件。</p></div>
+          <div class="agent-card"><div class="name">Explore</div><div class="role">代码库侦察员</div><p>快速搜索代码、发现模式、找相关文件。</p><p><strong>适合：</strong>repo 初探、定位函数、找调用链。</p><p><strong>不要：</strong>让它写复杂实现。</p></div>
+          <div class="agent-card"><div class="name">Librarian</div><div class="role">资料研究员</div><p>查文档、查开源实现、查库 API 和最佳实践。</p><p><strong>适合：</strong>技术栈文档、第三方库用法。</p><p><strong>不要：</strong>用它代替本地代码理解。</p></div>
+          <div class="agent-card"><div class="name">Metis</div><div class="role">Plan Consultant / 缺口分析顾问</div><p>计划定稿前找遗漏、歧义、隐藏前提和验收缺口。</p><p><strong>适合：</strong>计划还没写死、你怀疑需求不完整时。</p><p><strong>不要：</strong>把它当成最终审批者。</p></div>
+          <div class="agent-card"><div class="name">Momus</div><div class="role">Plan Critic / 严格计划批评者</div><p>计划准备执行前做 gate，判断是否足够清晰、可验证、可交给 Atlas 执行。</p><p><strong>适合：</strong>高风险任务开工前的最后审查。</p><p><strong>不要：</strong>让它替 Prometheus 写完整计划。</p></div>
+        </div>
+      </section>
+
+      <section id="plan-gate">
+        <h2>五、Plan 系列代理：Prometheus / Metis / Momus / Atlas 不是同一种东西</h2>
+        <p class="lead">你在输入 <code>@plan</code> 后看到 <code>@Momus - Plan Critic</code> 和 <code>@Metis - Plan Consultant</code>，不是因为它们是“计划模式”，而是因为它们是两个可直接唤起的计划质量控制代理。</p>
+        <div class="callout">
+          <strong>一句话区别：</strong><br />
+          <code>Prometheus</code> 负责写计划，<code>Metis</code> 负责找计划缺口，<code>Momus</code> 负责严格审查计划能不能开工，<code>Atlas</code> 负责拿着通过审查的计划去执行。
+        </div>
+
+        <h3>为什么 @plan 下拉里会看到 Metis 和 Momus？</h3>
+        <p>因为它们的展示名本身就属于计划链路：<code>Metis - Plan Consultant</code>、<code>Momus - Plan Critic</code>。这不是两种 plan 模式，而是两个不同 agent。官方和 GitHub issue 里都能看到这些显示名映射：<code>prometheus</code> 对应 Plan Builder，<code>atlas</code> 对应 Plan Executor，<code>metis</code> 对应 Plan Consultant，<code>momus</code> 对应 Plan Critic。</p>
+
+        <table>
+          <tr><th>代理</th><th>你可以怎么理解</th><th>主要问题</th><th>使用时机</th><th>错误用法</th></tr>
+          <tr><td><code>Prometheus</code><br /><span class="small">Plan Builder</span></td><td>计划作者 / 需求访谈者</td><td>这件事到底要怎么做？边界是什么？验收是什么？</td><td>复杂任务动代码前；Git Issue 转实施计划。</td><td>让它直接写业务代码，或者不看计划就执行。</td></tr>
+          <tr><td><code>Metis</code><br /><span class="small">Plan Consultant</span></td><td>计划顾问 / 缺口分析者</td><td>这个计划漏了什么？哪里需要猜？哪里会导致 AI 自作主张？</td><td>Prometheus 计划初稿出来后，或者你感觉需求还不完整时。</td><td>把它当最终审批；让它替你决定业务取舍。</td></tr>
+          <tr><td><code>Momus</code><br /><span class="small">Plan Critic</span></td><td>计划批评者 / 开工 gate</td><td>这个计划是否足够清晰、可执行、可验证？能不能交给 Atlas？</td><td>计划准备进入 <code>/start-work</code> 前。</td><td>没有计划就直接找 Momus；或者它说有 blocker 你还强行开工。</td></tr>
+          <tr><td><code>Atlas</code><br /><span class="small">Plan Executor</span></td><td>执行调度者</td><td>如何按计划拆分任务、调度 worker、验证结果？</td><td><code>/start-work</code> 后执行已经通过 gate 的计划。</td><td>让它重新发明计划，或者用它消化模糊需求。</td></tr>
+        </table>
+
+        <h3>更准确的计划链路</h3>
+        <div class="pipeline">
+          <div class="step"><b>01</b><strong>@plan / Prometheus</strong><span>访谈、探索 repo、生成计划初稿。</span></div>
+          <div class="step"><b>02</b><strong>Metis</strong><span>找隐藏前提、歧义、遗漏验收、AI 可能脑补的地方。</span></div>
+          <div class="step"><b>03</b><strong>修订计划</strong><span>把 Metis 发现的问题补进计划，而不是直接跳过。</span></div>
+          <div class="step"><b>04</b><strong>Momus</strong><span>严格判断是否 READY_TO_EXECUTE。</span></div>
+          <div class="step"><b>05</b><strong>/start-work / Atlas</strong><span>按计划执行、分发子任务、持续验证。</span></div>
+          <div class="step"><b>06</b><strong>Verification</strong><span>测试、review、提交、沉淀。</span></div>
+        </div>
+
+        <h3>Metis 和 Momus 的核心差异</h3>
+        <div class="grid-2">
+          <div class="card"><span class="tag">Metis</span><h4>计划还没定稿时用</h4><p>它的价值是暴露“你以为清楚、其实不清楚”的地方。它偏顾问，偏补洞，偏前置发现问题。</p><pre><code>@Metis Review this plan as a gap analyzer.
+Focus on hidden assumptions, ambiguous requirements,
+missing acceptance criteria, edge cases, and places
+where implementation would require guessing.</code></pre></div>
+          <div class="card"><span class="tag bad">Momus</span><h4>计划准备执行前用</h4><p>它的价值是挡住烂计划。它偏审判，偏 gate，偏判断是否能交给执行系统。</p><pre><code>@Momus Review this plan as a strict execution gate.
+Return READY_TO_EXECUTE or NEEDS_REVISION.
+Check scope, affected files, executable tasks,
+acceptance criteria, verification commands,
+forbidden changes, and unresolved decisions.</code></pre></div>
+        </div>
+
+        <div class="truth">
+          真实建议：你做自驾代码库时，别把 <code>Metis</code> 和 <code>Momus</code> 当成“可选装饰”。只要任务涉及多文件、多模块、权限、数据结构、支付、账务、架构或重构，就应该让它们做计划 gate。否则你是在把模糊需求直接丢给执行 agent，让它用代码替你做产品决策。
+        </div>
+      </section>
+
+      <section id="config">
+        <h2>六、oh-my-openagent.json 到底管什么？</h2>
+        <p class="lead">你可以把它理解为“多代理研发系统的控制台”。但不要一上来乱改。先理解配置项背后的治理含义。</p>
+        <table>
+          <tr><th>配置区域</th><th>负责内容</th><th>什么时候需要改</th></tr>
+          <tr><td><code>agents</code></td><td>为具体代理设置模型、权限、prompt、fallback。</td><td>某个代理效果长期不稳定，或者你要限制它的读写权限。</td></tr>
+          <tr><td><code>categories</code></td><td>定义任务类型对应的模型、温度、工具、附加提示词。</td><td>你要针对 UI、深推理、快修、文档写作做不同路由。</td></tr>
+          <tr><td><code>background_task</code></td><td>控制后台任务并发、provider 并发、model 并发。</td><td>出现限流、费用失控、并行任务互相抢资源。</td></tr>
+          <tr><td><code>sisyphus_agent</code></td><td>控制主编排系统、Prometheus planner、默认 builder 替换。</td><td>你想恢复原生 OpenCode，或者调整计划代理行为。</td></tr>
+          <tr><td><code>skills</code></td><td>配置内置/自定义 skills，指定来源、启用、禁用、工具权限。</td><td>你要给项目加入 git、playwright、设计走查、review 等专业 SOP。</td></tr>
+          <tr><td><code>team_mode</code></td><td>实验性并行多代理团队模式。</td><td>只有当普通编排跑稳后再考虑。默认不该打开。</td></tr>
+        </table>
+
+        <h3>一个更安全的基础配置思路</h3>
+        <pre><code>{
+  "background_task": {
+    "defaultConcurrency": 3,
+    "providerConcurrency": {
+      "openai": 2,
+      "google": 3,
+      "anthropic": 2
+    }
+  },
+  "sisyphus_agent": {
+    "disabled": false,
+    "planner_enabled": true,
+    "replace_plan": true
+  },
+  "skills": {
+    "enable": ["git-master", "review-work", "frontend-ui-ux"],
+    "disable": []
+  }
+}</code></pre>
+        <div class="truth">
+          现实建议：刚开始不要追求“最强配置”。先用默认配置跑固定任务集，记录失败类型，再改模型、权限、category。没有基线就调配置，本质是在蒙。
+        </div>
+      </section>
+
+      <section id="modes">
+        <h2>七、日常怎么用：三种模式</h2>
+        <p class="lead">不同复杂度要走不同路径。最危险的用法是所有任务都一句话丢给 <code>ulw</code>。</p>
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="mode-simple">简单任务</button>
+          <button class="tab-btn" data-tab="mode-ulw">复杂但懒得解释</button>
+          <button class="tab-btn" data-tab="mode-plan">复杂且要求可控</button>
+        </div>
+        <div id="mode-simple" class="tab-panel active">
+          <h3>简单任务：直接 prompt</h3>
+          <p>适合拼写修复、单文件小改、明确 bug、小范围样式问题。</p>
+          <pre><code>Fix the typo in the settings page title. Keep the change minimal.</code></pre>
+          <p class="small">判断标准：不需要探索大量上下文，不需要拆计划，不需要跨模块协调。</p>
+        </div>
+        <div id="mode-ulw" class="tab-panel">
+          <h3>复杂但懒得解释：ulw / ultrawork</h3>
+          <p>适合你知道目标，但不想详细解释项目结构，让它自己探索代码库、找模式、实现并验证。</p>
+          <pre><code>ulw fix the failing tests and keep changes minimal</code></pre>
+          <p class="small">风险：它会更自主。适合实验，不适合高风险业务逻辑。</p>
+        </div>
+        <div id="mode-plan" class="tab-panel">
+          <h3>复杂且要求可控：@plan → /start-work</h3>
+          <p>适合 Git Issue、跨文件功能、架构改造、支付/权限/数据迁移等高风险任务。</p>
+          <pre><code>@plan "Implement issue #42. Inspect the codebase first. Define affected files, acceptance criteria, and verification commands. Do not edit code yet."
+
+/start-work</code></pre>
+          <p class="small">这是你做自驾代码库时最应该采用的主流程。</p>
+        </div>
+      </section>
+
+
+
+      <section id="commands">
+        <h2>八、命令体系：/ulw-loop 这一类指令不能漏</h2>
+        <p class="lead">这里是我上一版漏掉的重点。<code>ulw</code> 是一种触发 ultrawork 的 prompt 前缀，而 <code>/ulw-loop</code> 是一个持续执行命令。两者都和“强自主执行”有关，但风险级别完全不同。</p>
+        <table>
+          <tr><th>命令 / 写法</th><th>核心作用</th><th>适合场景</th><th>主要风险</th></tr>
+          <tr><td><code>ulw ...</code></td><td>用 ultrawork 模式处理当前任务。</td><td>复杂但边界还算清楚的修复、探索、实现。</td><td>会更主动探索，可能扩大范围。</td></tr>
+          <tr><td><code>/ralph-loop "..."</code></td><td>启动自引用开发循环，持续推进直到完成信号或达到最大轮数。</td><td>长任务、需要自动续跑、不想手动反复催促。</td><td>完成检测依赖机制，失败时会浪费 token。</td></tr>
+          <tr><td><code>/ulw-loop "..."</code></td><td>在 ultrawork 强度下启动 loop；并行代理、后台任务、激进探索都会更强。</td><td>大型、多步骤、可接受高成本的自动执行。</td><td>最容易失控：跑太久、越界改动、成本不可控。</td></tr>
+          <tr><td><code>/cancel-ralph</code></td><td>取消 Ralph Loop。</td><td>发现 loop 方向错了或已经失控。</td><td>只能止损，不能替代前置计划。</td></tr>
+          <tr><td><code>/stop-continuation</code></td><td>停止当前会话里的 continuation 机制，包括 Ralph Loop、todo continuation、boulder state。</td><td>发现 agent 一直续跑、不停重复、后台任务卡住。</td><td>可能中断未完成任务，需要人工检查状态。</td></tr>
+          <tr><td><code>/init-deep</code></td><td>生成分层 AGENTS.md，让不同目录有自己的上下文。</td><td>老项目、复杂项目、目录结构稳定的项目。</td><td>生成后不维护，会变成过期上下文。</td></tr>
+          <tr><td><code>/refactor</code></td><td>使用 LSP、AST-grep、架构分析和 TDD 验证做重构。</td><td>命名迁移、模块重整、较系统的代码整理。</td><td>不适合没有测试保护的核心业务逻辑大改。</td></tr>
+          <tr><td><code>/handoff</code></td><td>生成当前工作上下文交接文档。</td><td>任务未完成、准备换会话、需要让下一个 agent 接续。</td><td>如果前面没有真实验证，handoff 只是漂亮总结。</td></tr>
+        </table>
+
+        <h3>/ulw-loop 和 ulw 的区别</h3>
+        <div class="grid-2">
+          <div class="card"><span class="tag">ulw</span><h4>一次强模式执行</h4><p>更像是“这次回答请进入 ultrawork 模式”。它会更积极地探索、计划、调用子代理，但仍然是一次任务请求。</p></div>
+          <div class="card"><span class="tag warn">/ulw-loop</span><h4>强模式 + 自动续跑</h4><p>更像是“不要停，直到任务完成”。它会在 ultrawork 模式下持续推进，默认更适合大任务，但也更容易浪费成本。</p></div>
+        </div>
+
+        <h3>/ralph-loop 和 /ulw-loop 的关系</h3>
+        <p><code>/ralph-loop</code> 是持续推进机制；<code>/ulw-loop</code> 是在这个持续推进机制上叠加 ultrawork 强度。官方文档对 <code>/ulw-loop</code> 的描述就是：和 ralph-loop 类似，但启用 ultrawork mode；这意味着并行代理、后台任务、激进探索都会更强。</p>
+        <div class="truth">
+          现实判断：<code>/ulw-loop</code> 不是日常默认模式。它适合“你已经定义清楚目标、边界、验收标准、最大轮数、验证命令”的任务。否则它只是把不清楚的需求，用更高成本、更高自主性放大。
+        </div>
+
+        <h3>推荐用法</h3>
+        <pre><code># 不推荐：目标过大，边界不清
+/ulw-loop "make this project production ready"
+
+# 推荐：目标、边界、验收和停止条件明确
+/ulw-loop "Fix issue #42. Scope is limited to auth/session handling. Do not refactor unrelated modules. Run lint, typecheck, and auth tests. Stop only after verification passes or after reporting a blocker." --max-iterations=20</code></pre>
+
+        <h3>什么时候不要用 /ulw-loop</h3>
+        <div class="grid-3">
+          <div class="card"><span class="tag bad">需求还没想清</span><p>先用 <code>@plan</code>，不要让 loop 替你猜业务逻辑。</p></div>
+          <div class="card"><span class="tag bad">没有测试保护</span><p>没有验证命令，loop 只能靠自我感觉完成。</p></div>
+          <div class="card"><span class="tag bad">高风险核心链路</span><p>支付、权限、数据迁移、账务逻辑，必须先计划审查再执行。</p></div>
+        </div>
+      </section>
+
+      <section id="categories-skills">
+        <h2>九、Category 与 Skill：这两个概念最容易混</h2>
+        <p class="lead">Category 回答“这是什么类型的任务”；Skill 回答“这个任务需要哪套专业方法和工具”。</p>
+        <table>
+          <tr><th>概念</th><th>决定什么</th><th>例子</th><th>错误用法</th></tr>
+          <tr><td>Category</td><td>模型、温度、思维方式、工具开关</td><td><code>visual-engineering</code>、<code>deep</code>、<code>quick</code>、<code>writing</code></td><td>把所有任务都塞进 <code>deep</code>，成本高且慢。</td></tr>
+          <tr><td>Skill</td><td>专业上下文、流程、MCP、操作规范</td><td><code>git-master</code>、<code>playwright</code>、<code>frontend-ui-ux</code>、<code>review-work</code></td><td>做一个万能大 skill，把所有规则塞进去。</td></tr>
+        </table>
+        <h3>内置 Category 的学习重点</h3>
+        <div class="grid-3">
+          <div class="card"><span class="tag">visual-engineering</span><h4>前端 / UI / 样式 / 动效</h4><p>适合移动端页面、组件、视觉修复、设计还原。</p></div>
+          <div class="card"><span class="tag">ultrabrain</span><h4>极深推理</h4><p>适合架构、复杂取舍、高风险技术判断。</p></div>
+          <div class="card"><span class="tag">deep</span><h4>深度问题解决</h4><p>适合一个清晰目标、一个明确交付物。不要塞多个目标。</p></div>
+          <div class="card"><span class="tag">quick</span><h4>小任务快修</h4><p>适合单文件、低风险、快速执行。</p></div>
+          <div class="card"><span class="tag">writing</span><h4>文档写作</h4><p>适合 README、技术说明、交付文档。</p></div>
+          <div class="card"><span class="tag">unspecified-high / low</span><h4>兜底任务</h4><p>当任务不属于明确类型时使用，但最好逐步沉淀成自定义 category。</p></div>
+        </div>
+        <h3>面向你自驾代码库的 Skill 拆法</h3>
+        <pre><code>issue-intake          # 把 Git Issue 转成任务输入
+plan-review           # 检查计划是否可执行、可验证
+implementation-boundary # 限制改动范围、禁止无关重构
+verification          # 定义 build/test/lint/手工 QA
+failure-analysis      # 失败归因与下次避免
+context-update        # 把经验沉淀进项目 harness
+handoff               # 交付总结与人类审核信息</code></pre>
+      </section>
+
+      <section id="workflow">
+        <h2>十、推荐工作流：放进 Git Issue 驱动研发</h2>
+        <p class="lead">如果你的目标是“自驾代码库”，就不要把 Issue 直接丢给 Agent 开干。中间必须有计划和验证 gate。</p>
+        <div class="pipeline">
+          <div class="step"><b>01</b><strong>Issue Intake</strong><span>提取目标、边界、验收标准、风险。</span></div>
+          <div class="step"><b>02</b><strong>@plan</strong><span>Prometheus 生成可执行计划。</span></div>
+          <div class="step"><b>03</b><strong>Plan Gate</strong><span>Metis / Momus / Oracle 审查计划。</span></div>
+          <div class="step"><b>04</b><strong>/start-work</strong><span>Atlas 拆分并调度执行。</span></div>
+          <div class="step"><b>05</b><strong>Review</strong><span>review-work 并行检查目标、质量、安全、QA、上下文。</span></div>
+          <div class="step"><b>06</b><strong>Commit</strong><span>git-master 拆原子提交，沉淀经验。</span></div>
+        </div>
+        <h3>适合你的判断公式</h3>
+        <pre><code>任务越复杂，越不能直接执行。
+任务越高风险，越要先写验收标准。
+代码库越老，越要先探索现有模式。
+上下文越多，越要把计划和验证写进文件。
+Agent 越自主，权限边界越要硬。</code></pre>
+      </section>
+
+      <section id="prompts">
+        <h2>十一、可直接复制的实战模板</h2>
+        <p class="lead">这些模板是给你日常启动任务用的。不要写“帮我优化一下”这种空话。</p>
+        <h3>1. Git Issue 转计划</h3>
+        <pre><code>@plan "Analyze GitHub issue #XX and create an executable implementation plan.
+
+Requirements:
+1. Inspect the existing codebase before proposing changes.
+2. Identify affected files and existing conventions.
+3. Define clear acceptance criteria.
+4. Define verification commands.
+5. Explicitly list MUST DO and MUST NOT DO constraints.
+6. Avoid unrelated refactoring.
+7. If business logic is ambiguous, mark it as a blocker instead of guessing.
+
+Do not edit code yet."</code></pre>
+        <h3>2. 计划审查</h3>
+        <pre><code>Ask Oracle to review this plan for architecture risk, hidden coupling, security concerns, missing verification, and hidden assumptions. Read-only. Do not edit files.</code></pre>
+        <h3>3. 执行计划</h3>
+        <pre><code>/start-work</code></pre>
+        <h3>4. 完成后审查</h3>
+        <pre><code>Use review-work to verify the implementation against the original issue, code quality, security, hands-on QA, and hidden context problems. Do not pass unless all checks are supported by evidence.</code></pre>
+        <h3>5. 原子提交</h3>
+        <pre><code>Use git-master to split changes into atomic commits. Each commit must have a clear purpose and must not mix unrelated changes.</code></pre>
+      </section>
+
+      <section id="pitfalls">
+        <h2>十二、常见误区</h2>
+        <p class="lead">这里说难听点：很多人用不好，不是工具不行，而是把流程治理当成“多装几个代理”。</p>
+        <div class="grid-2">
+          <div class="card"><span class="tag bad">误区 1</span><h3>所有任务都用 ultrawork</h3><p>这等于把计划、判断、执行、验收全交给一个黑盒。小项目爽，大项目会乱。</p></div>
+          <div class="card"><span class="tag bad">误区 2</span><h3>把所有代理都配最强模型</h3><p>Explore 和 Librarian 做搜索，用最强模型是浪费。模型匹配岗位，不是堆成本。</p></div>
+          <div class="card"><span class="tag bad">误区 3</span><h3>没有验收标准就开干</h3><p>没有验收标准，Agent 会用“看起来完成”代替“真的完成”。</p></div>
+          <div class="card"><span class="tag bad">误区 4</span><h3>只写提示词，不做权限约束</h3><p>“不要乱改”不如配置权限、限定目录、限定工具。边界要靠系统，不靠自觉。</p></div>
+          <div class="card"><span class="tag bad">误区 5</span><h3>计划评审只是走形式</h3><p>Metis / Momus 的意义是挡住烂计划。你如果什么计划都放行，等于没有 gate。</p></div>
+          <div class="card"><span class="tag bad">误区 6</span><h3>跳过失败归因</h3><p>失败不沉淀，下一次还会失败。自驾代码库的核心不是一次跑通，而是越跑越稳。</p></div>
+        </div>
+      </section>
+
+      <section id="evaluation">
+        <h2>十三、学习与验证清单</h2>
+        <p class="lead">你要学会这个插件，不是靠看文档，而是靠跑固定任务集，看每个节点是否可靠。</p>
+        <div class="checklist">
+          <div class="check-item"><div class="box"></div><div><strong>安装验证</strong><br /><span class="small">能运行 <code>bunx oh-my-openagent doctor</code>，确认系统、配置、工具、模型解析没有明显错误。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>代理可见性</strong><br /><span class="small">确认 Sisyphus、Prometheus、Atlas、Oracle 等代理在 OpenCode 里可见或可调用。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>计划质量</strong><br /><span class="small">Prometheus 生成的计划是否包含目标、范围、受影响文件、验收标准、验证命令、风险。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>计划 Gate</strong><br /><span class="small">Metis / Momus / Oracle 是否能发现计划里的模糊点、隐藏前提、无验证项。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>执行边界</strong><br /><span class="small">Atlas / Junior 是否按计划执行，是否避免无关重构和扩大范围。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>验证证据</strong><br /><span class="small">完成后是否真的跑了 build/test/lint/手工 QA，而不是口头说完成。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>提交质量</strong><br /><span class="small">git-master 是否能拆出原子提交，每个提交是否目的清晰。</span></div></div>
+          <div class="check-item"><div class="box"></div><div><strong>经验沉淀</strong><br /><span class="small">失败原因、项目规则、踩坑点是否沉淀进项目 harness，而不是下一次重犯。</span></div></div>
+        </div>
+
+        <h3>建议准备 10 个固定测试任务</h3>
+        <table>
+          <tr><th>任务类型</th><th>测试目的</th><th>重点观察</th></tr>
+          <tr><td>小修复</td><td>验证 quick 路由和最小 diff</td><td>是否只改必要位置。</td></tr>
+          <tr><td>单文件功能</td><td>验证简单实现能力</td><td>是否理解现有代码风格。</td></tr>
+          <tr><td>多文件功能</td><td>验证计划与执行协同</td><td>是否先找影响范围，再动代码。</td></tr>
+          <tr><td>UI 任务</td><td>验证 visual-engineering / frontend-ui-ux</td><td>是否尊重设计细节和移动端约束。</td></tr>
+          <tr><td>测试补充</td><td>验证测试意识</td><td>是否只写表面测试，还是覆盖关键路径。</td></tr>
+          <tr><td>失败恢复</td><td>验证 debug 和复盘</td><td>失败后是否归因，而不是盲改。</td></tr>
+          <tr><td>文档任务</td><td>验证 writing category</td><td>是否写出可执行文档，而非泛泛说明。</td></tr>
+          <tr><td>原子提交</td><td>验证 git-master</td><td>是否把不相关变更拆开。</td></tr>
+          <tr><td>计划审查</td><td>验证 Metis / Momus</td><td>能否拦住模糊需求。</td></tr>
+          <tr><td>上下文沉淀</td><td>验证 harness 更新</td><td>是否把经验变成下次可复用规则。</td></tr>
+        </table>
+      </section>
+
+      <section id="sources">
+        <h2>十四、资料来源与继续阅读</h2>
+        <p class="lead">本页面基于官方文档、GitHub 文档和 OpenCode 官方说明整理。没有使用中文网站来源。</p>
+        <ul class="source-list">
+          <li><a href="https://ohmyopenagent.com/docs" target="_blank">Oh My OpenAgent 官方文档</a>：总览、安装、编排、配置、功能、Team Mode。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/guide/overview.md" target="_blank">Overview Guide</a>：代理定位、工作模式、category 路由。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/guide/orchestration.md" target="_blank">Orchestration Guide</a>：Prometheus、Metis、Momus、Atlas 的计划与执行链路。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/reference/configuration.md" target="_blank">Configuration Reference</a>：配置项、并发、sisyphus_agent、skills、category schema。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/blob/dev/docs/guide/agent-model-matching.md" target="_blank">Agent / Model Matching Guide</a>：不同代理与模型族的匹配逻辑。</li>
+          <li><a href="https://opencode.ai/" target="_blank">OpenCode 官方网站</a>：OpenCode 的基础定位、LSP、多会话、登录方式和隐私说明。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/issues/2489" target="_blank">GitHub Issue #2489</a>：<code>/ulw-loop</code> 完成后未停止的历史问题与完成信号风险。</li>
+          <li><a href="https://github.com/code-yeongyu/oh-my-openagent/issues/3312" target="_blank">GitHub Issue #3312</a>：Plan Builder / Plan Executor / Plan Consultant / Plan Critic 显示名与调用映射问题。</li>
+          <li><a href="https://zenn.dev/lark1115/articles/ultrawork-guide-oh-my-openagent?locale=en" target="_blank">Ultrawork Guide</a>：第三方实践文章，整理了 stuck、rate limit、continuation 等使用风险。</li>
+        </ul>
+      </section>
+
+      <div class="footer">学习建议：先跑通 @plan → Metis → Momus → /start-work，再用固定测试任务验证每个节点，最后再做自定义 category / skill / harness。</div>
+    </main>
+  </div>
+
+  <script>
+    const buttons = document.querySelectorAll('.tab-btn');
+    const panels = document.querySelectorAll('.tab-panel');
+    buttons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        buttons.forEach(b => b.classList.remove('active'));
+        panels.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
